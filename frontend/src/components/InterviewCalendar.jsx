@@ -4,7 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 export default function InterviewCalendar({ interviews }) {
   const events = interviews.map(i => ({
-    title: `${i.first_name} - ${i.level_name}`,
+    title: `${i.first_name} - ${i.round || "Pending"}`,
     start: i.interview_date,
     color:
       i.status === "Passed" ? "green" :

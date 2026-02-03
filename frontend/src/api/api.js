@@ -10,3 +10,5 @@ export const updateInterviewStatus = (id, status) =>
   API.put(`/interviews/${id}/status`, { status });
 export const nextInterviewRound = (id) =>
   API.post(`/interviews/${id}/next`);
+export const runAiInterviewShortlist = (jobId) =>
+  API.post(`/interviews/ai-shortlist/${jobId}`);

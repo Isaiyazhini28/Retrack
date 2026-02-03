@@ -12,7 +12,7 @@ def score_resume():
     job_description = data.get("job_description", "").lower()
 
     if not resume_text.strip() or not job_description.strip():
-        return jsonify({"score": 72.34, "shortlist": True})
+        return jsonify({"score": 0.0, "shortlist": False})
 
     # TF-IDF vectorization
     vectorizer = TfidfVectorizer(stop_words="english")
@@ -25,6 +25,7 @@ def score_resume():
     shortlist = sim_score >= 65
 
     print(f"Resume length: {len(resume_text)}, Job length: {len(job_description)}, Score: {sim_score}")
+    return jsonify({"score": sim_score, "shortlist": shortlist})
 
 
 if __name__ == "__main__":
