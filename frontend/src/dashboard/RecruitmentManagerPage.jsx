@@ -107,6 +107,7 @@ export default function RecruitmentManagerPage() {
   const [scoredCandidates, setScoredCandidates] = useState([]); 
   const [shortlistedTab, setShortlistedTab] = useState(false); 
   const [interviews, setInterviews] = useState([]);
+  const [aiResults, setAiResults] = useState([]);
   
 
   const API_BASE = "http://localhost:5000/api";
@@ -302,12 +303,15 @@ const toggleCandidateSelection = (id) => {
   const aiShortlist = async () => {
     if (!selectedJobId) return alert("Select a job first!");
     try {
-      const res = await axios.post(`${API_BASE}/ai-shortlist/${selectedJobId}`);
-      setScoredCandidates(res.data); // scored top candidates
+      const res = await axios.post(`${API_BASE}/interviews/ai-shortlist/${selectedJobId}`);
+      setScoredCandidates(res.data.results || []);
+      setAiResults(res.data.results || []);
       fetchExternalCandidates();
       fetchInterviews();
       alert("AI Shortlist updated!");
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
     useEffect(() => { fetchJobs(); fetchExternalCandidates(); fetchInterviews(); }, []);
 
@@ -609,6 +613,81 @@ const toggleCandidateSelection = (id) => {
   </div>
 )}
 
+      {/* INTERVIEWS */}
+      {activeTab === "interviews" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>AI Interview Pipeline</h2>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <select
+                value={selectedJobId || ""}
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                style={styles.input}
+              >
+                <option value="" disabled>
+                  Select job
+                </option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.title}
+                  </option>
+                ))}
+              </select>
+              <button style={styles.button} onClick={aiShortlist}>
+                Run AI Shortlist &amp; Schedule
+              </button>
+            </div>
+            {aiResults.length > 0 && (
+              <div style={{ marginTop: "15px" }}>
+                <p>
+                  Shortlisted:{" "}
+                  <b>{aiResults.filter((r) => r.status === "shortlisted").length}</b> | Rejected:{" "}
+                  <b>{aiResults.filter((r) => r.status === "rejected").length}</b>
+                </p>
+                <div style={{ overflowX: "auto" }}>
+                  <table border="1" cellPadding={6}>
+                    <thead>
+                      <tr>
+                        <th>Candidate</th>
+                        <th>Email</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Interview Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aiResults.map((r) => (
+                        <tr key={r.id}>
+                          <td>
+                            {r.first_name} {r.last_name}
+                          </td>
+                          <td>{r.email}</td>
+                          <td>{r.score ?? "-"}</td>
+                          <td>{r.status}</td>
+                          <td>
+                            {r.interview_date
+                              ? new Date(r.interview_date).toLocaleString()
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={styles.card}>
+            <h2 style={styles.sectionTitle}>Interview Calendar</h2>
+            <InterviewCalendar interviews={interviews.filter((i) => i.interview_date)} />
+          </div>
+
+          <div style={styles.card}>
+            <InterviewList />
+          </div>
+        </div>
+      )}
 
 
 

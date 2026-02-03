@@ -9,7 +9,7 @@ export const scheduleInterview = async (candidateId) => {
   interviewDate.setDate(interviewDate.getDate() + 2);
 
   await pool.query(
-    "INSERT INTO interviews(candidate_id, level_id, interview_date) VALUES (?, ?, ?)",
+    "INSERT INTO interviews(candidate_id, level_id, scheduled_at) VALUES (?, ?, ?)",
     [candidateId, levels[0].id, interviewDate]
   );
 

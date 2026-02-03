@@ -32,6 +32,8 @@ export default function InterviewList() {
             <th>Candidate</th>
             <th>Position</th>
             <th>Round</th>
+            <th>AI Score</th>
+            <th>Shortlist Status</th>
             <th>Status</th>
             <th>Interview Date</th>
             <th>Actions</th>
@@ -39,16 +41,22 @@ export default function InterviewList() {
         </thead>
         <tbody>
           {interviews.map((i) => (
-            <tr key={`${i.id}-${i.round}`}>
-              <td>{i.first_name}</td>
-              <td>{i.position}</td>
-              <td>{i.level_name}</td>
-              <td>{i.status}</td>
-              <td>{new Date(i.interview_date).toLocaleString()}</td>
+            <tr key={`${i.candidate_id}-${i.round || "pending"}`}>
               <td>
-                <button onClick={() => handleStatusChange(i.id, "Passed")}>Pass</button>
-                <button onClick={() => handleStatusChange(i.id, "Failed")}>Fail</button>
-                <button onClick={() => handleNextRound(i.id)}>Next Round</button>
+                {i.first_name} {i.last_name}
+              </td>
+              <td>{i.position}</td>
+              <td>{i.round || "Pending"}</td>
+              <td>{i.ai_score ?? "-"}</td>
+              <td>{i.shortlist_status ?? "pending"}</td>
+              <td>{i.status ?? "Pending"}</td>
+              <td>
+                {i.interview_date ? new Date(i.interview_date).toLocaleString() : "—"}
+              </td>
+              <td>
+                <button onClick={() => handleStatusChange(i.candidate_id, "Passed")}>Pass</button>
+                <button onClick={() => handleStatusChange(i.candidate_id, "Failed")}>Fail</button>
+                <button onClick={() => handleNextRound(i.candidate_id)}>Next Round</button>
               </td>
             </tr>
           ))}
