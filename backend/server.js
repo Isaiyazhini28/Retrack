@@ -64,6 +64,12 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.get("/", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Retrack Backend Running"
+  });
+});
 app.use("/api/auth", authRoutes);
 app.use(express.json());       
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
