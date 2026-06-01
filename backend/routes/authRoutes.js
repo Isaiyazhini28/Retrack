@@ -42,6 +42,8 @@ router.post("/change-password", verifyToken, changePasswordLoggedIn);
 router.post("/forgot-password-send-otp", sendOtp);
 router.post("/forgot-password-verify-otp", verifyOtp); 
 router.post("/forgot-password-change", changePassword);
-
+router.get("/", (req, res) => {
+  res.json({ message: "Auth route working" });
+});
 
 export default router;
