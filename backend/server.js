@@ -63,6 +63,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: [
     "https://retrack-app.hrstrategicatlas.workers.dev",
+    "https://retrack-hrms.netlify.app",
     "http://localhost:5173"
   ],
   credentials: true
