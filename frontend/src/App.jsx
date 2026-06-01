@@ -105,7 +105,7 @@ function RegisterPage() {
     const p = registerSchema.safeParse({employeeId,name,email,password});
     if (!p.success){setError(p.error.issues[0].message);return;}
     try { const fd=new FormData(); fd.append("employeeId",employeeId); fd.append("name",name); fd.append("email",email); fd.append("password",password); if(photo) fd.append("photo",photo);
-      const res=await fetch("http://localhost:5000/api/auth/register",{method:"POST",body:fd}); const data=await res.json();
+      const res=await fetch(`${import.meta.env.VITE_API_URL}/auth/register`,{method:"POST",body:fd});
       if(!res.ok){setError(data.message||"Registration failed");return;} alert("Registration successful!"); navigate("/login");
     } catch { setError("Server not responding"); }
   };
@@ -140,7 +140,7 @@ function LoginPage() {
   const navigate=useNavigate(); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [showForgot,setShowForgot]=useState(false);
   const login = async () => {
     setError(""); const p=loginSchema.safeParse({email,password}); if(!p.success){setError(p.error.issues[0].message);return;}
-    try { const res=await fetch("http://localhost:5000/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})}); const data=await res.json();
+    try { const res=await fetch(`${import.meta.env.VITE_API_URL}/auth/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
       if(!res.ok){setError(data.message);return;} localStorage.setItem("token",data.token); navigate("/dashboard");
     } catch { setError("Server not responding"); }
   };
