@@ -119,9 +119,9 @@ cron.schedule("0 * * * *", async () => {
   await syncInterviewScores();
 });
 
-cron.schedule("0 * * * *", async () => {
-  await autoCloseAndTriggerAI();
-});
+// cron.schedule("0 * * * *", async () => {
+//   await autoCloseAndTriggerAI();
+// });
 
 let isRunning = false;
 cron.schedule("0 * * * *", async () => {
