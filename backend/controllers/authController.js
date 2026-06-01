@@ -8,44 +8,40 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "isai12d25@gmail.com",        // your Gmail
-    pass: "keka dcyg ypus tpwn",        // app password
+    user: "isai12d25@gmail.com",
+    pass: "keka dcyg ypus tpwn",
   },
 });
 
 /* ===== REGISTER ===== */
 export const register = async (req, res) => {
+  console.log("==== REGISTER DEBUG ====");
+  console.log("BODY:", req.body);
+  console.log("EMPLOYEE ID:", req.body.employeeId);
+  console.log("FILE:", req.file);
   try {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, employeeId } = req.body || {};
     const photo = req.file ? req.file.filename : "";
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !employeeId) {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    const [exists] = await pool.query(
-      "SELECT id FROM users WHERE email = ?",
-      [email]
-    );
-
+    const [exists] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
     if (exists.length > 0) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     await pool.query(
-      "INSERT INTO users (name, email, password, photo) VALUES (?, ?, ?, ?)",
-      [name, email, hashedPassword, photo]
+      "INSERT INTO users (employee_id, name, email, password, photo) VALUES (?, ?, ?, ?, ?)",
+      [employeeId, name, email, hashedPassword, photo]
     );
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: "Server error" });
-    console.log("REQ.BODY:", req.body);
-    console.log("REQ.FILE:", req.file);
-
   }
 };
 
@@ -54,27 +50,18 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const [users] = await pool.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
-
+    const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
     if (users.length === 0) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const user = users[0];
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1d" });
 
     res.json({
       token,
@@ -98,7 +85,7 @@ export const getMe = async (req, res) => {
     const userId = req.user.id;
 
     const [rows] = await pool.query(
-      "SELECT id, name, email, photo, email_verified FROM users WHERE id = ?",
+      "SELECT id, employee_id, name, email, photo, email_verified FROM users WHERE id = ?",
       [userId]
     );
 
@@ -106,7 +93,14 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(rows[0]);
+    res.json({
+      id: rows[0].id,
+      employeeId: rows[0].employee_id,
+      name: rows[0].name,
+      email: rows[0].email,
+      photo: rows[0].photo,
+      email_verified: rows[0].email_verified,
+    });
   } catch (err) {
     console.error("GET ME ERROR:", err);
     res.status(500).json({ message: "Server error" });
@@ -128,38 +122,19 @@ export const updateProfile = async (req, res) => {
 
     const current = rows[0];
 
-
     if (password && !current.email_verified) {
       return res.status(403).json({ message: "Verify your email before changing password" });
     }
 
-
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
-
 
     const updates = [];
     const params = [];
 
-    if (name) {
-      updates.push("name=?");
-      params.push(name);
-    }
-
-
-    if (email && current.email_verified) {
-      updates.push("email=?");
-      params.push(email);
-    }
-
-    if (hashedPassword) {
-      updates.push("password=?");
-      params.push(hashedPassword);
-    }
-
-    if (photo) {
-      updates.push("photo=?");
-      params.push(photo);
-    }
+    if (name) { updates.push("name=?"); params.push(name); }
+    if (email && current.email_verified) { updates.push("email=?"); params.push(email); }
+    if (hashedPassword) { updates.push("password=?"); params.push(hashedPassword); }
+    if (photo) { updates.push("photo=?"); params.push(photo); }
 
     if (updates.length === 0) {
       return res.status(400).json({ message: "Nothing to update" });
@@ -167,10 +142,8 @@ export const updateProfile = async (req, res) => {
 
     const sql = `UPDATE users SET ${updates.join(", ")} WHERE id=?`;
     params.push(userId);
-
     await pool.query(sql, params);
 
-    // Return updated user
     const [updatedRows] = await pool.query(
       "SELECT id, name, email, photo, email_verified FROM users WHERE id=?",
       [userId]
@@ -183,14 +156,18 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-
-/* ===== SEND EMAIL OTP ===== */
+/* ===== SEND EMAIL OTP (forgot-password / email verification) ===== */
 export const sendOtp = async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ message: "Email is required" });
+  const { employeeId, email } = req.body;
+  if (!employeeId || !email) {
+    return res.status(400).json({ message: "Employee ID and Email are required" });
+  }
 
   try {
-    const [rows] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    const [rows] = await pool.query(
+      "SELECT id FROM users WHERE email = ? AND employee_id = ?",
+      [email, employeeId]
+    );
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     const userId = rows[0].id;
@@ -215,17 +192,17 @@ export const sendOtp = async (req, res) => {
   }
 };
 
-
-
 /* ===== VERIFY EMAIL OTP ===== */
 export const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
+    const { employeeId, email, otp } = req.body;
+    if (!email || !otp || !employeeId) {
+      return res.status(400).json({ message: "Employee ID, Email and OTP are required" });
+    }
 
     const [rows] = await pool.query(
-      "SELECT email_otp, otp_expiry FROM users WHERE email = ?",
-      [email]
+      "SELECT email_otp, otp_expiry FROM users WHERE email = ? AND employee_id = ?",
+      [email, employeeId]
     );
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
@@ -246,10 +223,11 @@ export const verifyOldPassword = async (req, res) => {
     const userId = req.user.id;
     const { oldPassword } = req.body;
 
-    const [rows] = await pool.query(
-      "SELECT password FROM users WHERE id=?",
-      [userId]
-    );
+    if (!oldPassword) {
+      return res.status(400).json({ message: "Old password is required" });
+    }
+
+    const [rows] = await pool.query("SELECT password FROM users WHERE id=?", [userId]);
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     const match = await bcrypt.compare(oldPassword, rows[0].password);
@@ -262,7 +240,7 @@ export const verifyOldPassword = async (req, res) => {
   }
 };
 
-/* ===== SEND PASSWORD CHANGE OTP ===== */
+/* ===== SEND PASSWORD CHANGE OTP (logged-in user) ===== */
 export const sendPasswordChangeOtp = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -272,7 +250,10 @@ export const sendPasswordChangeOtp = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await pool.query("UPDATE users SET email_otp=? WHERE id=?", [otp, userId]);
+    await pool.query(
+      "UPDATE users SET email_otp=?, otp_expiry=? WHERE id=?",
+      [otp, Date.now() + 10 * 60 * 1000, userId]
+    );
 
     await transporter.sendMail({
       from: '"RecTrack" <isai12d25@gmail.com>',
@@ -288,15 +269,54 @@ export const sendPasswordChangeOtp = async (req, res) => {
   }
 };
 
-/* ===== CHANGE PASSWORD ===== */
-export const changePassword = async (req, res) => {
+/* ===== CHANGE PASSWORD (logged-in user, OTP-verified) ===== */
+// FIX: removed invalid references to `employeeId` and `email` — this route uses req.user.id
+export const changePasswordLoggedIn = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) return res.status(400).json({ message: "All fields required" });
+    const userId = req.user.id;
+    const { otp, newPassword } = req.body;
+
+    if (!otp || !newPassword) {
+      return res.status(400).json({ message: "OTP and new password are required" });
+    }
 
     const [rows] = await pool.query(
-      "SELECT email_otp, otp_expiry FROM users WHERE email = ?",
-      [email]
+      "SELECT email_otp, otp_expiry FROM users WHERE id=?",
+      [userId]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
+
+    const user = rows[0];
+
+    if (user.email_otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
+    if (Date.now() > user.otp_expiry) return res.status(400).json({ message: "OTP expired" });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await pool.query(
+      "UPDATE users SET password=?, email_otp=NULL, otp_expiry=NULL WHERE id=?",
+      [hashedPassword, userId]
+    );
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("CHANGE PASSWORD LOGGED IN ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* ===== CHANGE PASSWORD (forgot-password flow, not logged in) ===== */
+export const changePassword = async (req, res) => {
+  try {
+    const { employeeId, email, otp, newPassword } = req.body;
+    if (!employeeId || !email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    const [rows] = await pool.query(
+      "SELECT email_otp, otp_expiry FROM users WHERE email = ? AND employee_id = ?",
+      [email, employeeId]
     );
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
@@ -307,8 +327,8 @@ export const changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await pool.query(
-      "UPDATE users SET password=?, email_otp=NULL, otp_expiry=NULL WHERE email=?",
-      [hashedPassword, email]
+      "UPDATE users SET password=?, email_otp=NULL, otp_expiry=NULL WHERE email = ? AND employee_id = ?",
+      [hashedPassword, email, employeeId]
     );
 
     res.status(200).json({ message: "Password changed successfully" });
@@ -317,4 +337,3 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-

@@ -8,7 +8,8 @@ import {
   verifyOtp,
   changePassword,
   sendPasswordChangeOtp,
-  verifyOldPassword
+  verifyOldPassword, 
+  changePasswordLoggedIn ,
 } from "../controllers/authController.js";
 
 import verifyToken from "../middleware/verifyToken.js";
@@ -32,7 +33,8 @@ router.post("/verify-old-password", verifyToken, verifyOldPassword);
 router.post("/send-password-otp", verifyToken, sendPasswordChangeOtp);
 
 
-router.post("/change-password", verifyToken, changePassword);
+
+router.post("/change-password", verifyToken, changePasswordLoggedIn);
 
 
 

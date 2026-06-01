@@ -24,9 +24,14 @@ router.get("/summary", async (req, res) => {
 router.get("/jobs-by-department", async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT department AS dept, SUM(openings) AS openings
+      SELECT 
+        TRIM(department) AS dept,
+        SUM(openings) AS openings
       FROM jobs
-      GROUP BY department
+      WHERE department IS NOT NULL
+        AND department != ''
+      GROUP BY TRIM(department)
+      ORDER BY dept
     `);
 
     res.json(rows);
@@ -35,5 +40,6 @@ router.get("/jobs-by-department", async (req, res) => {
     res.status(500).json({ error: "Bar chart data failed" });
   }
 });
+
 export default router;
 

@@ -10,20 +10,28 @@ const ensureDir = (dir) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+
     let uploadPath = "uploads/others";
 
     if (file.fieldname === "photo") {
       uploadPath = "uploads/photos";
-    } else if (file.fieldname === "resume") {
+    } 
+    else if (file.fieldname === "resume") {
       uploadPath = "uploads/resumes";
+    } 
+    else if (file.fieldname === "projectFile") {
+      uploadPath = "uploads/projects";
     }
 
     ensureDir(uploadPath);
+
     cb(null, uploadPath);
   },
+
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}${path.extname(file.originalname)}`);
   },
+
 });
 
 export const upload = multer({ storage });

@@ -1,10 +1,13 @@
 import express from "express";
 import pool from "../db.js";
+import { deleteJob } from '../controllers/jobController.js';
 
 const router = express.Router();
+router.delete('/:id', deleteJob);
 
 router.post("/", async (req, res) => {
   try {
+    // ✅ 1. Destructure FIRST
     const {
       job_id,
       title,
@@ -14,34 +17,56 @@ router.post("/", async (req, res) => {
       employment_type,
       openings,
       description,
-      status
+      status,
+      opening_date,
+      closing_date
     } = req.body;
 
-    const sql = `
-      INSERT INTO jobs
-      (jobId, title, department, skills, experience, employmentType, openings, description, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    // ✅ 2. Convert date to YYYY-MM-DD (NO TIME)
+    const formatDate = (date) =>
+      date ? new Date(date).toISOString().split("T")[0] : null;
 
-    await pool.query(sql, [
-      job_id,
-      title,
-      department,
-      skills,
-      experience,
-      employment_type,
-      Number(openings),
-      description,
-      status || "open"
-    ]);
+    const openingDate = formatDate(opening_date);
+    const closingDate = formatDate(closing_date);
 
-    res.json({ message: "Job created" });
+    // ✅ 3. Auto-close if date < today
+    const today = new Date().toISOString().split("T")[0];
+    let finalStatus = status || "open";
+
+    if (closingDate && closingDate < today) {
+      finalStatus = "closed";
+    }
+
+    // ✅ 4. Insert
+    await pool.query(
+      `INSERT INTO jobs
+      (jobId, title, department, skills, experience, employmentType,
+       openings, description, status, opening_date, closing_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        job_id,
+        title,
+        department,
+        skills,
+        experience,
+        employment_type,
+        Number(openings) || 0,
+        description,
+        finalStatus,
+        openingDate,
+        closingDate
+      ]
+    );
+
+    res.json({ message: "Job created successfully" });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Job insert failed" });
+    console.error("POST /api/jobs error:", err);
+    res.status(500).json({ error: "Job insert failed", details: err.message });
   }
 });
+
+
 /* ================= GET ALL JOBS ================= */
 router.get("/", async (req, res) => {
   try {
@@ -81,6 +106,49 @@ router.put("/:id/close", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Failed to close job" });
   }});
+
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      job_id, title, department, skills, experience,
+      employment_type, openings, opening_date, closing_date,
+      description, status
+    } = req.body;
+
+    const sql = `
+      UPDATE jobs SET
+        jobId=?, title=?, department=?, skills=?, experience=?,
+        employmentType=?, openings=?, opening_date=?, closing_date=?, description=?, status=?
+      WHERE id=?
+    `;
+
+    const [result] = await pool.query(sql, [
+      job_id || null,              // map job_id → jobId
+      title,
+      department,
+      skills,
+      experience,
+      employment_type || null,     // map employment_type → employmentType
+      Number(openings) || 0,       // ensure openings is a number
+      opening_date || null,
+      closing_date || null,
+      description,
+      status,
+      id
+    ]);
+
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Job not found" });
+
+    res.json({ message: "Job updated successfully" });
+
+  } catch (err) {
+    console.error("PUT /api/jobs/:id error:", err);
+    res.status(500).json({ error: "Job update failed", details: err.message });
+  }
+});
+
+
 
 
 export default router;

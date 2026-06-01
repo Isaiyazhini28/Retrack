@@ -4,6 +4,7 @@ const pool = mysql.createPool({
   user: "root",
   password: "NewPassword@123",
   database: "auth_db",
+  waitForConnections:true,
 });
 export default pool;
 

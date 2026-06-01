@@ -1,29 +1,87 @@
 import pool from "../db.js";
-import { processCandidate } from "./processCandidate.js";
+import { processCandidate } from "../services/autoPipeline.js";
+import {getAIScore} from "../services/aiScore.js";
+import { scheduleInterview } from "../services/scheduleInterview.js";
 
 export const createJob = async (req, res) => {
   try {
-    const { job_id, title, department, skills, experience, employmentType, openings, description, status } = req.body;
+    const {
+      job_id,
+      title,
+      department,
+      skills,
+      experience,
+      employment_type,
+      openings,
+      description,
+      opening_date,
+      closing_date
+    } = req.body;
+
+    const status = getStatusFromDates(opening_date, closing_date);
 
     const [result] = await pool.query(
-      `INSERT INTO jobs 
-      (job_id, title, department, skills, experience, employmentType, openings, description, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [job_id, title, department, skills, experience, employmentType, openings, description, status]
+      `INSERT INTO jobs
+       (jobId, title, department, skills, experience, employmentType,
+        openings, description, status, opening_date, closing_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        job_id,
+        title,
+        department,
+        skills,
+        experience,
+        employment_type,
+        openings,
+        description,
+        status,
+        opening_date,
+        closing_date
+      ]
     );
 
-    res.status(201).json({ id: result.insertId, ...req.body });
+    res.status(201).json({ id: result.insertId });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to create job", error: err.message });
+    res.status(500).json({ error: "Failed to create job" });
   }
 };
 
 
-
 export const getJobs = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM jobs");
+    await updateJobStatuses();
+    // 1️⃣ Upcoming jobs
+    await pool.query(`
+      UPDATE jobs
+      SET status = 'upcoming'
+      WHERE opening_date > CURDATE()
+    `);
+
+    // 2️⃣ Open jobs
+    await pool.query(`
+      UPDATE jobs
+      SET status = 'open'
+      WHERE opening_date <= CURDATE()
+        AND closing_date >= CURDATE()
+    `);
+
+    // 3️⃣ Closed jobs
+    await pool.query(`
+      UPDATE jobs
+      SET status = 'closed'
+      WHERE closing_date < CURDATE()
+    `);
+  
+
+
+    // 4️⃣ Fetch jobs (frontend decides filter)
+    const [rows] = await pool.query(`
+      SELECT *
+      FROM jobs
+      ORDER BY opening_date DESC
+    `);
+
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -31,45 +89,55 @@ export const getJobs = async (req, res) => {
   }
 };
 
+
+
 export const updateJob = async (req, res) => {
   try {
     const { id } = req.params;
-    const { jobId, title, department, skills, experience, employmentType, openings, description, status } = req.body;
+    const {
+      job_id,
+      title,
+      department,
+      skills,
+      experience,
+      employment_type,
+      openings,
+      description,
+      opening_date,
+      closing_date
+    } = req.body;
 
-    
-    // Update job info
+    const status = getStatusFromDates(opening_date, closing_date);
+
     await pool.query(
-      `UPDATE jobs SET jobId=?, title=?, department=?, skills=?, experience=?, employmentType=?, openings=?, description=?, status=? WHERE id=?`,
-      [jobId, title, department, skills, experience, employmentType, openings, description, status, id]
+      `UPDATE jobs SET
+        jobId=?, title=?, department=?, skills=?, experience=?,
+        employmentType=?, openings=?, description=?,
+        status=?, opening_date=?, closing_date=?
+       WHERE id=?`,
+      [
+        job_id,
+        title,
+        department,
+        skills,
+        experience,
+        employment_type,
+        openings,
+        description,
+        status,
+        opening_date,
+        closing_date,
+        id
+      ]
     );
 
-    // If job just got closed, run AI scoring automatically
-    if (status === "closed") {
-      const [candidates] = await pool.query(
-        `SELECT * FROM external_candidates WHERE position=?`,
-        [title]
-      );
-
-      for (const c of candidates) {
-        const score = await aiScoreCandidate(c.resume_url, skills);
-        const shortlist = score >= 65 ? "shortlisted" : "rejected";
-
-        await pool.query(
-          `UPDATE external_candidates SET ai_score=?, shortlist_status=? WHERE id=?`,
-          [score, shortlist, c.id]
-        );
-      }
-
-      // Mark job as AI processed
-      await pool.query(`UPDATE jobs SET ai_processed=1 WHERE id=?`, [id]);
-    }
-
-    res.json({ id, ...req.body, message: status === "closed" ? "Job closed & AI scored candidates" : "Job updated" });
+    res.json({ message: "Job updated successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to update job", error: err.message });
+    res.status(500).json({ error: "Job update failed" });
   }
 };
+
 
 export const closeJobsAndScore = async () => {
   // 1. Find jobs closing today
@@ -103,8 +171,19 @@ export const closeJob = async (req, res) => {
     await pool.query("UPDATE jobs SET status=? WHERE id=?", [status, id]);
 
     if (status === "closed") {
-      // Trigger AI evaluation asynchronously
-      processJobClosure(id);
+      // automatically score all candidates for this job
+      const [candidates] = await pool.query(
+        "SELECT * FROM external_candidates WHERE job_id=? AND ai_score=0",
+        [id]
+      );
+
+      const [[job]] = await pool.query("SELECT * FROM jobs WHERE id=?", [id]);
+
+      for (const candidate of candidates) {
+        await processCandidate(candidate, job);
+      }
+
+      console.log(`✅ AI scoring completed for all candidates in job ID ${id}`);
     }
 
     res.json({ message: `Job status updated to ${status}` });
@@ -145,5 +224,110 @@ export const aiScoreCandidatesForJob = async (candidate) => {
     console.log(`✅ AI scored for ${candidate.email} | Job: ${job.title}`);
   } catch (err) {
     console.error(`AI scoring failed for: ${candidate.email}`, err.message);
+  }
+};
+
+export const deleteJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [result] = await pool.query("DELETE FROM jobs WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.json({ message: "Job deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete job", error: err.message });
+  }
+};
+
+export const updateJobStatuses = async () => {
+  try {
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    // 1️⃣ Upcoming jobs (opening_date in future)
+    await pool.query(
+      `UPDATE jobs
+       SET status = 'upcoming'
+       WHERE opening_date > ?`,
+      [today]
+    );
+
+    // 2️⃣ Open jobs (today is between opening and closing)
+    await pool.query(
+      `UPDATE jobs
+       SET status = 'open'
+       WHERE opening_date <= ? AND closing_date >= ?`,
+      [today, today]
+    );
+
+    // 3️⃣ Closed jobs (closing date < today)
+    await pool.query(
+      `UPDATE jobs
+       SET status = 'closed'
+       WHERE closing_date < ?`,
+      [today]
+    );
+
+    console.log("✅ Job statuses updated based on dates");
+  } catch (err) {
+    console.error("Failed to update job statuses:", err.message);
+  }
+};
+
+
+
+export const runJobClosingPipeline = async () => {
+  console.log("⏰ Running job closing pipeline...");
+
+  const [jobs] = await pool.query(`
+    SELECT * FROM jobs
+    WHERE closing_date = CURDATE()
+    AND status = 'open'
+  `);
+
+  for (const job of jobs) {
+    console.log(`🔒 Closing job: ${job.title}`);
+
+    await pool.query(
+      "UPDATE jobs SET status='closed' WHERE id=?",
+      [job.id]
+    );
+
+    const [candidates] = await pool.query(
+      "SELECT * FROM external_candidates WHERE job_id=?",
+      [job.id]
+    );
+
+    console.log(`👥 Candidates found: ${candidates.length}`);
+
+    for (const c of candidates) {
+      if (!c.resume_text) continue;
+
+      const { score, shortlist } = await getAIScore(
+        c.resume_text,
+        job.description
+      );
+
+      const status = shortlist ? "shortlisted" : "rejected";
+
+      await pool.query(
+        `UPDATE external_candidates
+         SET ai_score=?, shortlist_status=?
+         WHERE id=?`,
+        [score, status, c.id]
+      );
+
+      if (shortlist) {
+        await scheduleInterview(c.id);
+      }
+
+      console.log(
+        `✅ ${c.email} → ${score}% → ${status}`
+      );
+    }
   }
 };
