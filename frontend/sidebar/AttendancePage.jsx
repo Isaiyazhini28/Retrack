@@ -3,8 +3,8 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const ATT_API = "http://localhost:5000/api/attendance";
-const EMP_API = "http://localhost:5000/api/users/employees";
+const ATT_API = "https://retrack.onrender.com/api/attendance";
+const EMP_API = "https://retrack.onrender.com/api/users/employees";
 
 const injectAttStyles = () => {
   if (document.getElementById("att-css")) return;

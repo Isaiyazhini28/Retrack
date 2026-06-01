@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const SET_API = "http://localhost:5000/api/settings";
+const SET_API = "https://retrack.onrender.com/api/settings";
 
 const injectSetStyles = () => {
   if (document.getElementById("set-css")) return;

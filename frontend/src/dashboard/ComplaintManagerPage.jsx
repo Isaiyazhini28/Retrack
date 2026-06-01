@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-const API = "http://localhost:5000/api/complaints";
+const API = "https://retrack.onrender.com/api/complaints";
 
 /* ─── INJECT STYLES ─── */
 const injectStyles = () => {

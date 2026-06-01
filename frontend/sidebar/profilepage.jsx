@@ -5,7 +5,7 @@ import userImg from "../src/assets/user.png";
 import ForgotPasswordModal from "../src/ForgotPasswordModal";
 import ChangePasswordModal from "../src/ChangePasswordModal";
 
-const API = "http://localhost:5000/api/auth";
+const API = "https://retrack.onrender.com/api/auth";
 
 const injectStyles = () => {
   if (document.getElementById("pp-styles")) return;

@@ -126,7 +126,7 @@ export default function ForgotPasswordModal({ close }) {
   const sendOtp = async () => {
     setError("");
     try {
-      const res  = await fetch("http://localhost:5000/api/auth/forgot-password-send-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email }) });
+      const res  = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password-send-otp`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email }) });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to send OTP");
       setStep(2); setSuccess("OTP sent to your email");
@@ -136,7 +136,7 @@ export default function ForgotPasswordModal({ close }) {
   const verifyOtp = async () => {
     setError(""); setSuccess("");
     try {
-      const res  = await fetch("http://localhost:5000/api/auth/forgot-password-verify-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email, otp }) });
+      const res  = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password-verify-otp`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email, otp }) });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "OTP invalid");
       setStep(3); setSuccess("OTP verified. Enter new password.");
@@ -147,7 +147,7 @@ export default function ForgotPasswordModal({ close }) {
     setError(""); setSuccess("");
     if (newPassword !== confirmPassword) return setError("Passwords do not match");
     try {
-      const res  = await fetch("http://localhost:5000/api/auth/forgot-password-change", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email, otp, newPassword }) });
+      const res  = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password-change`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ employeeId, email, otp, newPassword }) });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to change password");
       setSuccess("Password changed successfully!");

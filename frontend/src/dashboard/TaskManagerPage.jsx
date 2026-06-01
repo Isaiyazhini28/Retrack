@@ -8,7 +8,7 @@ import {
   Legend, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 
-const API = "http://localhost:5000/api";
+const API = "https://retrack.onrender.com/api";
 
 /* ─── INJECT STYLES ─── */
 const injectStyles = () => {

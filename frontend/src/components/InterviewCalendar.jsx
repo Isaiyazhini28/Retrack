@@ -32,7 +32,7 @@ const fetchData = async () => {
 
   const fetchExternalCandidates = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/external-candidates");
+      const res = await axios.get("https://retrack.onrender.com/api/external-candidates");
       setExternalCandidates(res.data);
     } catch (err) {
       console.error("Error fetching external candidates:", err);
@@ -40,7 +40,7 @@ const fetchData = async () => {
   };
 
   const fetchNotifications = async () => {
-  const res = await axios.get("http://localhost:5000/api/admin/notifications");
+  const res = await axios.get("https://retrack.onrender.com/api/admin/notifications");
   setNotifications(res.data);
 };
 useEffect(() => {
@@ -57,7 +57,7 @@ useEffect(() => {
   fetchNotifications();
 
   const interval = setInterval(() => {
-    axios.post("http://localhost:5000/api/reminders/check");
+    axios.post("https://retrack.onrender.com/api/reminders/check");
     fetchNotifications();
   }, 60000); // every 1 min
 
@@ -86,7 +86,7 @@ const shouldShowInterview = (c) => {
 // const handlePass = async (interviewId, candidateId) => {
 //   try {
 //     const { data } = await axios.post(
-//       `http://localhost:5000/api/interviews/${interviewId}/pass`
+//       `https://retrack.onrender.com/api/interviews/${interviewId}/pass`
 //     );
 
 //     if (data.nextRound) {
@@ -139,7 +139,7 @@ const StatusBadge = ({ status }) => {
 // const handleFail = async (interviewId) => {
 //   try {
 //     await axios.post(
-//       `http://localhost:5000/api/interviews/${interviewId}/status`,
+//       `https://retrack.onrender.com/api/interviews/${interviewId}/status`,
 //       { status: "Rejected" }
 //     );
 
@@ -172,7 +172,7 @@ const StatusBadge = ({ status }) => {
 
 //       for (const candidate of candidatesToSchedule) {
 //         await axios.post(
-//           `http://localhost:5000/api/interviews/${candidate.id}/next`
+//           `https://retrack.onrender.com/api/interviews/${candidate.id}/next`
 //         );
 //       }
 
@@ -208,7 +208,7 @@ const StatusBadge = ({ status }) => {
 
     const checkReminders = async () => {
   try {
-    await axios.post("http://localhost:5000/api/reminders/check");
+    await axios.post("https://retrack.onrender.com/api/reminders/check");
   } catch (err) {
     console.error("Reminder check failed", err);
   }
@@ -227,7 +227,7 @@ useEffect(() => {
       for (const candidate of candidatesToSchedule) {
         // Schedule next round for this candidate + position
         await axios.post(
-          `http://localhost:5000/api/interviews/${candidate.id}/next`,
+          `https://retrack.onrender.com/api/interviews/${candidate.id}/next`,
           { position: candidate.position } // send position to backend
         );
       }
@@ -374,7 +374,7 @@ useEffect(() => {
         <div
           key={n.id}
           onClick={() => {
-            axios.post(`http://localhost:5000/api/admin/notifications/${n.id}/read`);
+            axios.post(`https://retrack.onrender.com/api/admin/notifications/${n.id}/read`);
             setShowNotifications(false);
           }}
           style={{
@@ -411,7 +411,7 @@ useEffect(() => {
   </button>
   <button
   onClick={() => {
-    window.location.href = "http://localhost:5000/api/download-candidates-excel";
+    window.location.href = "https://retrack.onrender.com/api/download-candidates-excel";
   }}
   style={{
     padding: "8px 14px",
@@ -672,3 +672,4 @@ const aiStatus = isRejected
     </div>
   );
 }
+

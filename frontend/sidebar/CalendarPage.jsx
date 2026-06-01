@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const CAL_API = "http://localhost:5000/api/calendar";
+const CAL_API = "https://retrack.onrender.com/api/calendar";
 
 const injectCalStyles = () => {
   if (document.getElementById("cal-css")) return;

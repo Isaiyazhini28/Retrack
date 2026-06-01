@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const BOARD_API = "http://localhost:5000/api/board";
+const BOARD_API = "https://retrack.onrender.com/api/board";
 
 const injectBoardStyles = () => {
   if (document.getElementById("board-css")) return;

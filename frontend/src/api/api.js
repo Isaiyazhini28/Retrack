@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "https://retrack.onrender.com/api",
 });
 
 export const getCandidates = () => API.get("/candidates");
@@ -12,4 +12,5 @@ export const nextInterviewRound = (id) =>
   API.post(`/interviews/${id}/next`);
 export const runAiInterviewShortlist = (jobId) =>
   API.post(`/interviews/ai-shortlist/${jobId}`);
+
 

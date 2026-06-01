@@ -216,7 +216,7 @@ export default function RecruitmentManagerPage() {
   const [pieData, setPieData]                 = useState([]);
   const [barData, setBarData]                 = useState([]);
 
-  const API_BASE = "http://localhost:5000/api";
+  const API_BASE = "https://retrack.onrender.com/api";
 
   const fetchJobs = async () => { try { const r = await axios.get(`${API_BASE}/jobs`); setJobs(r.data); } catch(e) { console.error(e); } };
   const fetchExternalCandidates = async () => {

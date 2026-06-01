@@ -154,7 +154,7 @@ export default function Layout({ children }) {
     (async () => {
       try {
         const token = localStorage.getItem("token");
-        const res   = await fetch("http://localhost:5000/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+        const res   = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
         const data  = await res.json();
         setUser({ ...data, role: data.role || "HR Manager" });
       } catch {}
@@ -173,7 +173,7 @@ export default function Layout({ children }) {
       <div className="ly-sidebar">
         <div className="ly-logo-wrap"><img src={logo} alt="Logo" /></div>
         <div className="ly-user-wrap">
-          <img src={user.photo ? `http://localhost:5000/uploads/photos/${user.photo}` : userImg} alt="User" className="ly-avatar" />
+          <img src={user.photo ? `${import.meta.env.VITE_API_URL.replace('/api','')}/uploads/photos/${user.photo}` : userImg} alt="User" className="ly-avatar" />
           <div className="ly-user-info">
             <div className="ly-user-name">{user.name || "Loading…"}</div>
             <div className="ly-user-role">{user.role}</div>

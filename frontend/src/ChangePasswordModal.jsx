@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:5000/api/auth";
+const API = "https://retrack.onrender.com/api/auth";
 
 export function ChangePasswordModal({ close }) {
   injectModalStyles(); // same injector above

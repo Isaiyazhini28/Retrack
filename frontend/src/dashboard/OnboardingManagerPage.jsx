@@ -8,7 +8,7 @@ import {
   BarChart, Bar, ResponsiveContainer
 } from "recharts";
 
-const API = "http://localhost:5000/api";
+const API = "https://retrack.onrender.com/api";
 
 /* ─── STYLES ─── */
 const injectStyles = () => {

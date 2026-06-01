@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, Tooltip, Legend,
 } from "recharts";
 
-const API = "http://localhost:5000/api/leaves";
+const API = "https://retrack.onrender.com/api/leaves";
 
 /* ─── INJECT STYLES ─── */
 const injectGlobalStyles = () => {

@@ -8,7 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell,
 } from "recharts";
 
-const API = "http://localhost:5000/api/users";
+const API = "https://retrack.onrender.com/api/users";
 
 /* ─── INJECT STYLES ─── */
 const injectStyles = () => {
