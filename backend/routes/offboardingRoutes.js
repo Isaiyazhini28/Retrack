@@ -9,7 +9,7 @@ import {
   importTasksFromExcel,
   importSurveyExcel,
   getOffboardedEmployees,
-} from "../controllers/OffboardingController.js";
+} from "../controllers/offboardingController.js";
 
 const router = express.Router();
 
