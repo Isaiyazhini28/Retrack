@@ -59,7 +59,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 5000;  
 
-app.use(cors());
+
+app.use(cors({
+  origin: [
+    "https://retrack-app.hrstrategicatlas.workers.dev",
+    "http://localhost:5173"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use(express.json());       
