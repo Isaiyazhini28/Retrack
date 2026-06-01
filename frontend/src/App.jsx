@@ -138,12 +138,45 @@ function RegisterPage() {
 function LoginPage() {
   injectAuthStyles();
   const navigate=useNavigate(); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [showForgot,setShowForgot]=useState(false);
-  const login = async () => {
-    setError(""); const p=loginSchema.safeParse({email,password}); if(!p.success){setError(p.error.issues[0].message);return;}
-    try { const res=await fetch(`${import.meta.env.VITE_API_URL}/auth/login`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
-      if(!res.ok){setError(data.message);return;} localStorage.setItem("token",data.token); navigate("/dashboard");
-    } catch { setError("Server not responding"); }
-  };
+const login = async () => {
+  setError("");
+
+  const p = loginSchema.safeParse({ email, password });
+
+  if (!p.success) {
+    setError(p.error.issues[0].message);
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      }
+    );
+
+    const data = await res.json(); // IMPORTANT
+
+    console.log("LOGIN RESPONSE:", data);
+
+    if (!res.ok) {
+      setError(data.message || "Login failed");
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+
+    navigate("/dashboard");
+  } catch (err) {
+    console.error(err);
+    setError("Server not responding");
+  }
+};
   return (
     <div className="auth-page" style={{backgroundImage:`url(${bgImage})`}}>
       <div className="auth-blur"/>
